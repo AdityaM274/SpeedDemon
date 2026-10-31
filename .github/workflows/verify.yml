@@ -1,0 +1,42 @@
+name: Linux correctness and offline container
+on:
+  push:
+    branches: [speed-demon]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get pinned public organizer reference
+        run: |
+          git clone https://github.com/hackathon-raptors/speed-demon-2026 reference
+          git -C reference checkout 38936f6c901f44d3cdcda9551fe9df2c84212d2b
+      - name: Native Linux differential checks
+        run: |
+          g++ -std=c++20 -O3 -Wall -Wextra -Werror track-a/main.cpp -o /tmp/solution
+          python3 tests/differential.py --exe /tmp/solution --reference-root reference --report results/linux-correctness.json
+      - name: Prefetch only allowlisted images
+        run: |
+          docker pull gcc:15@sha256:eb5e64286ad47187b32bda75c6b6916166ecb41da56559b8b09e0001748d2cce
+          docker pull debian:13-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad
+      - name: Offline build and sandbox correctness
+        run: |
+          docker build --network=none -t speed-a track-a
+          python3 reference/generators/a_ingest.py --seed 1 --scale full --out "$RUNNER_TEMP/data"
+          mkdir -p "$RUNNER_TEMP/out"
+          chmod 777 "$RUNNER_TEMP/out"
+          docker run --rm --network=none --read-only --user 65534:65534 --memory 8g --memory-swap 8g --pids-limit 512 --tmpfs /tmp:rw,size=1g -v "$RUNNER_TEMP/data:/data:ro" -v "$RUNNER_TEMP/out:/out:rw" speed-a
+          echo '495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3  '"$RUNNER_TEMP/out/summary.txt" | sha256sum --check
+          test "$(find "$RUNNER_TEMP/out" -type f | wc -l)" -eq 1
+      - name: Same-host repeated development measurements
+        run: python3 tests/benchmark.py --exe /tmp/solution --reference-root reference --data "$RUNNER_TEMP/data" --report results/linux-benchmark.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-verification
+          path: results/
+          retention-days: 7

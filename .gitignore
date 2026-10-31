@@ -1,2 +1,10 @@
 .out/
 data/
+*.exe
+*.obj
+__pycache__/
+results/
+reference/
+track-b/
+track-c/
+track-d/
