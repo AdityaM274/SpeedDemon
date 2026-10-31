@@ -1,0 +1,83 @@
+{
+  "scope": "Native same-host development only; not official hardware, cgroup memory or leaderboard scoring",
+  "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "data_sha256": "7ec80ba45bceef51ac7f79d3a14521fc6187b2dcb87b5e5542d08063fe5d962a",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "cpu": "AMD EPYC 9V45 96-Core Processor",
+  "commit": "1f474b743b16a766a3c68e7614075a1ff2caa5bf",
+  "measurements": {
+    "reference": {
+      "runs": [
+        {
+          "wall_seconds": 16.94,
+          "peak_rss_kib": 218276,
+          "outer_seconds": 16.963333897999973,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        },
+        {
+          "wall_seconds": 16.55,
+          "peak_rss_kib": 218116,
+          "outer_seconds": 16.564647949999994,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        },
+        {
+          "wall_seconds": 16.7,
+          "peak_rss_kib": 218200,
+          "outer_seconds": 16.707122519999984,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        },
+        {
+          "wall_seconds": 16.59,
+          "peak_rss_kib": 218228,
+          "outer_seconds": 16.6028021300001,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        },
+        {
+          "wall_seconds": 16.42,
+          "peak_rss_kib": 218212,
+          "outer_seconds": 16.435658010999987,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        }
+      ],
+      "middle_three_mean_seconds": 16.613333333333333,
+      "maximum_peak_rss_kib": 218276
+    },
+    "candidate": {
+      "runs": [
+        {
+          "wall_seconds": 0.39,
+          "peak_rss_kib": 27024,
+          "outer_seconds": 0.400822981000033,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        },
+        {
+          "wall_seconds": 0.39,
+          "peak_rss_kib": 27228,
+          "outer_seconds": 0.4005449830000316,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        },
+        {
+          "wall_seconds": 0.38,
+          "peak_rss_kib": 27096,
+          "outer_seconds": 0.77226371200004,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        },
+        {
+          "wall_seconds": 0.37,
+          "peak_rss_kib": 27244,
+          "outer_seconds": 0.37887721800007057,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        },
+        {
+          "wall_seconds": 0.38,
+          "peak_rss_kib": 27128,
+          "outer_seconds": 0.38790114200003245,
+          "sha256": "495ca09682b9673ef836a506496177680bb4a3af54255174befddb1f83481cd3"
+        }
+      ],
+      "middle_three_mean_seconds": 0.38333333333333336,
+      "maximum_peak_rss_kib": 27244
+    }
+  }
+}
