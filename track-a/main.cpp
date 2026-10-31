@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cstdint>
 #include <filesystem>
@@ -6,12 +7,20 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
 struct Group {
   std::vector<uint32_t> latencies;
   uint64_t errors = 0;
+};
+
+struct EndpointHash {
+  using is_transparent = void;
+  size_t operator()(std::string_view text) const noexcept {
+    return std::hash<std::string_view>{}(text);
+  }
 };
 
 uint32_t number(const std::string &line, size_t start, size_t end) {
@@ -40,7 +49,13 @@ int main(int argc, char **argv) {
     std::ifstream input(data / "requests.log", std::ios::binary);
     if (!input)
       throw std::runtime_error("cannot open requests.log");
-    std::unordered_map<std::string, Group> groups;
+    std::unordered_map<std::string, std::array<Group, 72>, EndpointHash,
+                       std::equal_to<>>
+        endpoints;
+    std::unordered_map<std::string, size_t> hour_ids;
+    std::vector<std::string> hours;
+    std::string last_hour;
+    size_t hour_id = 0;
     std::string line;
     while (std::getline(input, line)) {
       if (line.size() < 39 || line[27] != ' ')
@@ -56,18 +71,30 @@ int main(int argc, char **argv) {
       if (status < 100 || status > 599)
         throw std::runtime_error("status outside contract");
       const auto latency = number(line, endpoint_end + 5, line.size());
-      // Fixed UTC hour text sorts chronologically; do not assume input order.
-      auto key = line.substr(0, 13) + " " +
-                 line.substr(method_end + 1, endpoint_end - method_end - 1);
-      auto &group = groups[key];
+      if (line.compare(0, 13, last_hour) != 0) {
+        last_hour = line.substr(0, 13);
+        auto [hour, fresh] = hour_ids.try_emplace(last_hour, hours.size());
+        if (fresh) {
+          if (hours.size() == 72)
+            throw std::runtime_error("more than 72 hours outside contract");
+          hours.push_back(last_hour);
+        }
+        hour_id = hour->second;
+      }
+      const std::string_view endpoint(line.data() + method_end + 1,
+                                      endpoint_end - method_end - 1);
+      auto found = endpoints.find(endpoint);
+      if (found == endpoints.end())
+        found = endpoints.try_emplace(std::string(endpoint)).first;
+      auto &group = found->second[hour_id];
       group.latencies.push_back(latency);
       group.errors += status >= 500;
     }
     if (!input.eof())
       throw std::runtime_error("input read failed");
-    std::vector<decltype(groups)::value_type *> ordered;
-    ordered.reserve(groups.size());
-    for (auto &entry : groups)
+    std::vector<decltype(endpoints)::value_type *> ordered;
+    ordered.reserve(endpoints.size());
+    for (auto &entry : endpoints)
       ordered.push_back(&entry);
     std::sort(ordered.begin(), ordered.end(),
               [](auto a, auto b) { return a->first < b->first; });
@@ -75,17 +102,25 @@ int main(int argc, char **argv) {
     std::ofstream output(out / "summary.txt", std::ios::binary);
     if (!output)
       throw std::runtime_error("cannot open summary.txt");
-    for (auto entry : ordered) {
-      auto &values = entry->second.latencies;
-      std::sort(values.begin(), values.end());
-      const uint64_t n = values.size(), errors = entry->second.errors;
-      auto percentile = [&](uint64_t p) {
-        return values[(p * n + 99) / 100 - 1];
-      };
-      output << entry->first.substr(0, 13) << ":00:00Z"
-             << entry->first.substr(13) << ' ' << n << ' ' << percentile(50)
-             << ' ' << percentile(95) << ' ' << percentile(99) << ' ' << errors
-             << ' ' << errors * 1000000 / n << '\n';
+    std::vector<std::pair<std::string, size_t>> ordered_hours;
+    for (size_t i = 0; i < hours.size(); ++i)
+      ordered_hours.emplace_back(hours[i], i);
+    std::sort(ordered_hours.begin(), ordered_hours.end());
+    for (const auto &[hour, id] : ordered_hours) {
+      for (auto entry : ordered) {
+        auto &values = entry->second[id].latencies;
+        if (values.empty())
+          continue;
+        std::sort(values.begin(), values.end());
+        const uint64_t n = values.size(), errors = entry->second[id].errors;
+        auto percentile = [&](uint64_t p) {
+          return values[(p * n + 99) / 100 - 1];
+        };
+        output << hour << ":00:00Z " << entry->first << ' ' << n << ' '
+               << percentile(50) << ' ' << percentile(95) << ' '
+               << percentile(99) << ' ' << errors << ' ' << errors * 1000000 / n
+               << '\n';
+      }
     }
     output.close();
     if (!output)

@@ -42,6 +42,9 @@ with tempfile.TemporaryDirectory() as temp:
                          'maximum_peak_rss_kib': max(s['peak_rss_kib'] for s in samples)}
 result = {'scope': 'Native same-host development only; not official hardware, cgroup memory or leaderboard scoring',
           'platform': platform.platform(), 'python': sys.version, 'data_sha256': hashlib.sha256((data / 'requests.log').read_bytes()).hexdigest(),
+          'compiler': subprocess.check_output(['g++', '--version'], text=True).splitlines()[0],
+          'cpu': next((line.split(':', 1)[1].strip() for line in pathlib.Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('model name')), 'unknown'),
+          'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
           'measurements': results}
 target = pathlib.Path(a.report)
 target.parent.mkdir(parents=True, exist_ok=True)
