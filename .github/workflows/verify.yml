@@ -2,6 +2,11 @@ name: Linux correctness and offline container
 on:
   push:
     branches: [speed-demon]
+    paths:
+      - track-a/main.cpp
+      - track-a/Dockerfile
+      - tests/**
+      - .github/workflows/verify.yml
   workflow_dispatch:
 permissions:
   contents: read
